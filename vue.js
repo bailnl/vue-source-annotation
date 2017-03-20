@@ -11,6 +11,7 @@
 
 /*  */
 
+// 将一个值转换成为字符串，而object使用JSON.stringify来转换
 /**
  * Convert a value to a string that is actually rendered.
  */
@@ -22,6 +23,7 @@ function _toString (val) {
       : String(val)
 }
 
+// 将一个值转换成为数值，如果转换失败就返回原来的值
 /**
  * Convert a input value to a number for persistence.
  * If the conversion fails, return original string.
@@ -31,6 +33,11 @@ function toNumber (val) {
   return isNaN(n) ? val : n
 }
 
+// 用','来split一个字符串生成一个map然后返回一个函数(用于检查某个key是否存在这个map上)
+// 第二参数用于是否将当返回函数输入val(key)是大写的时候会转成小写
+// 例如: makeMap('a,b')('b') --> true  
+// makeMap('a,b', true)('B') --> true
+// 此功能一般用于判断一个tag或者attr是否允许范围内。
 /**
  * Make a map and return a function for checking if a key
  * is in that map.
@@ -49,11 +56,13 @@ function makeMap (
     : function (val) { return map[val]; }
 }
 
+// 是否为内置tag
 /**
  * Check if a tag is a built-in tag.
  */
 var isBuiltInTag = makeMap('slot,component', true);
 
+// 从数组中删除某个项
 /**
  * Remove an item from an array
  */
@@ -66,6 +75,7 @@ function remove (arr, item) {
   }
 }
 
+// 检测一个属于是否为自身属性
 /**
  * Check whether the object has the property.
  */
@@ -74,6 +84,7 @@ function hasOwn (obj, key) {
   return hasOwnProperty.call(obj, key)
 }
 
+// 检查一个值是否为原始值 (string || number)
 /**
  * Check if value is primitive
  */
@@ -81,6 +92,11 @@ function isPrimitive (value) {
   return typeof value === 'string' || typeof value === 'number'
 }
 
+// 创建一个纯函数的缓存版本
+// 因为纯函数相同的输入总是返回相同的结果
+// 由于框架内部有很多这种重复计算的场景，
+// 这个cached函数应用而生，目的就是为了减少重复计算
+// 相同的输入第二次就从cache取
 /**
  * Create a cached version of a pure function.
  */
@@ -92,6 +108,7 @@ function cached (fn) {
   })
 }
 
+// 将用-连接的字符串'make-map'转成'makeMap'驼峰形式
 /**
  * Camelize a hyphen-delimited string.
  */
@@ -100,6 +117,7 @@ var camelize = cached(function (str) {
   return str.replace(camelizeRE, function (_, c) { return c ? c.toUpperCase() : ''; })
 });
 
+// 首字母大写 
 /**
  * Capitalize a string.
  */
@@ -107,6 +125,7 @@ var capitalize = cached(function (str) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 });
 
+// 将'makeMap'驼峰形式转成用-连接的字符串'make-map'
 /**
  * Hyphenate a camelCase string.
  */
@@ -118,6 +137,7 @@ var hyphenate = cached(function (str) {
     .toLowerCase()
 });
 
+// 简单的函数bind, 比原生要快
 /**
  * Simple bind, faster than native
  */
@@ -130,11 +150,13 @@ function bind (fn, ctx) {
         : fn.call(ctx, a)
       : fn.call(ctx)
   }
+  // 记录原始函数的参数长度
   // record original fn length
   boundFn._length = fn.length;
   return boundFn
 }
 
+// 将一个类数组换转成真实的数组
 /**
  * Convert an Array-like object to a real Array.
  */
@@ -148,6 +170,7 @@ function toArray (list, start) {
   return ret
 }
 
+// 浅拷贝
 /**
  * Mix properties into target object.
  */
@@ -158,6 +181,8 @@ function extend (to, _from) {
   return to
 }
 
+// 快速对象检查 - 当我们知道值是一个JSON兼容类型时，
+// 这主要用于从原始值中告诉对象。
 /**
  * Quick object check - this is primarily used to tell
  * Objects from primitive values when we know the value
@@ -167,6 +192,7 @@ function isObject (obj) {
   return obj !== null && typeof obj === 'object'
 }
 
+// 严格的对象检查，只对纯对象返回true
 /**
  * Strict object type check. Only returns true
  * for plain JavaScript objects.
@@ -177,6 +203,9 @@ function isPlainObject (obj) {
   return toString.call(obj) === OBJECT_STRING
 }
 
+// 将对象数组合并成单一对象
+// 例如: 
+// toObject([{a: 1, b: 2}, {c: 3}]) --> {a: 1, b: 2, c: 3}
 /**
  * Merge an Array of Objects into a single Object.
  */
@@ -190,21 +219,25 @@ function toObject (arr) {
   return res
 }
 
+// 不执行任何操作的空函数
 /**
  * Perform no operation.
  */
 function noop () {}
 
+// 总是返回false的函数
 /**
  * Always return false.
  */
 var no = function () { return false; };
 
+// 返回相同值的函数
 /**
  * Return same value
  */
 var identity = function (_) { return _; };
 
+// 从编译器模块生成staticKeys的字符串
 /**
  * Generate a static keys string from compiler modules.
  */
@@ -214,6 +247,8 @@ function genStaticKeys (modules) {
   }, []).join(',')
 }
 
+// 检查两个值是否相等(宽松), 
+// 如果是纯对象他们应该有相同的外形
 /**
  * Check if two values are loosely equal - that is,
  * if they are plain objects, do they have the same shape?
@@ -235,6 +270,7 @@ function looseEqual (a, b) {
   }
 }
 
+// array indexOf 宽松相等版本
 function looseIndexOf (arr, val) {
   for (var i = 0; i < arr.length; i++) {
     if (looseEqual(arr[i], val)) { return i }
@@ -242,6 +278,7 @@ function looseIndexOf (arr, val) {
   return -1
 }
 
+// 确保一个函数只调用一次
 /**
  * Ensure a function is called only once.
  */
@@ -258,74 +295,88 @@ function once (fn) {
 /*  */
 
 var config = {
+  // option 合并策略
   /**
    * Option merge strategies (used in core/util/options)
    */
   optionMergeStrategies: Object.create(null),
 
+  // 是否抑止警告
   /**
    * Whether to suppress warnings.
    */
   silent: false,
 
+  // 启动时是否显示production模式提示消息
   /**
    * Show production mode tip message on boot?
    */
   productionTip: "development" !== 'production',
 
+  // 是否启用devtools
   /**
    * Whether to enable devtools
    */
   devtools: "development" !== 'production',
 
+  // 是否记录performance
   /**
    * Whether to record perf
    */
   performance: false,
 
+  // 错误处理器用于watcher的错误
   /**
    * Error handler for watcher errors
    */
   errorHandler: null,
 
+  // 忽略某些自定义元素
   /**
    * Ignore certain custom elements
    */
   ignoredElements: [],
 
+  // 给 v-on 自定义键位别名
   /**
    * Custom user key aliases for v-on
    */
   keyCodes: Object.create(null),
 
+  // 检查标签是否保留，以便它不能被注册成一个组件，这与平台相关。
   /**
    * Check if a tag is reserved so that it cannot be registered as a
    * component. This is platform-dependent and may be overwritten.
    */
   isReservedTag: no,
 
+  // 检查一个标签是否是未知元素
   /**
    * Check if a tag is an unknown element.
    * Platform-dependent.
    */
   isUnknownElement: no,
 
+  // 获取一个元素的命名空间
   /**
    * Get the namespace of an element
    */
   getTagNamespace: noop,
 
+  // 解析特定平台的实际标签名称
   /**
    * Parse the real tag name for the specific platform.
    */
   parsePlatformTagName: identity,
 
+  // 检查属性是否必须使用属性绑定，这和平台相关，例如： value 
   /**
    * Check if an attribute must be bound using property, e.g. value
    * Platform-dependent.
    */
   mustUseProp: no,
 
+  // 组件可以拥有的资产的类型
   /**
    * List of asset types that a component can own.
    */
@@ -335,6 +386,7 @@ var config = {
     'filter'
   ],
 
+  // 生命周期构子列表
   /**
    * List of lifecycle hooks.
    */
@@ -351,6 +403,7 @@ var config = {
     'deactivated'
   ],
 
+  // 调度程序刷新周期中允许的最大循环更新
   /**
    * Max circular updates allowed in a scheduler flush cycle.
    */
@@ -359,8 +412,11 @@ var config = {
 
 /*  */
 
+// 空对象(冻结)
 var emptyObject = Object.freeze({});
 
+// 检查一个字符串是否为$或者_开头
+// 用于检查一个key是否为私有的
 /**
  * Check if a string starts with $ or _
  */
@@ -369,6 +425,7 @@ function isReserved (str) {
   return c === 0x24 || c === 0x5F
 }
 
+// 定义一个属性, 可设置为不可枚举
 /**
  * Define a property.
  */
@@ -381,6 +438,8 @@ function def (obj, key, val, enumerable) {
   });
 }
 
+// 解析简单的路径
+// 用于解析watcher表达式 Vue.$watch('a.b.c') 
 /**
  * Parse simple path.
  */
@@ -402,9 +461,11 @@ function parsePath (path) {
 /*  */
 /* globals MutationObserver */
 
+// 检查是否能使用__proto__
 // can we use __proto__?
 var hasProto = '__proto__' in {};
 
+// 浏览器环境嗅探
 // Browser environment sniffing
 var inBrowser = typeof window !== 'undefined';
 var UA = inBrowser && window.navigator.userAgent.toLowerCase();
@@ -415,6 +476,7 @@ var isAndroid = UA && UA.indexOf('android') > 0;
 var isIOS = UA && /iphone|ipad|ipod|ios/.test(UA);
 var isChrome = UA && /chrome\/\d+/.test(UA) && !isEdge;
 
+// 这需要延迟评估，因为在vue-server-renderer可以设置VUE_ENV之前可能需要vue
 // this needs to be lazy-evaled because vue may be required before
 // vue-server-renderer can set VUE_ENV
 var _isServer;
@@ -432,18 +494,25 @@ var isServerRendering = function () {
   return _isServer
 };
 
+// 检测devtools
 // detect devtools
 var devtools = inBrowser && window.__VUE_DEVTOOLS_GLOBAL_HOOK__;
 
+// 是否为原生
 /* istanbul ignore next */
 function isNative (Ctor) {
   return /native code/.test(Ctor.toString())
 }
 
+// 是否支持Symbol(同时也要支持Reflect)
+// 用于 Provide/Injections 特性中Injections
+// 把Symbol作为key的对象时用反射取keys
+// Object.keys是不可以取 Symbol 作为key的
 var hasSymbol =
   typeof Symbol !== 'undefined' && isNative(Symbol) &&
   typeof Reflect !== 'undefined' && isNative(Reflect.ownKeys);
 
+// 推迟一个任务以异步形式来执行
 /**
  * Defer a task to execute it asynchronously.
  */
@@ -460,6 +529,9 @@ var nextTick = (function () {
       copies[i]();
     }
   }
+
+  // nextTick行为利用microtask任务队列, 可以通过Promise.then或者MutationObserver访问
+  // MutationObserver有更广泛的支持，但是它有严重的侵入性。
 
   // the nextTick behavior leverages the microtask queue, which can be accessed
   // via either native Promise.then or MutationObserver.
@@ -523,6 +595,7 @@ var nextTick = (function () {
   }
 })();
 
+// 简单的实现Set
 var _Set;
 /* istanbul ignore if */
 if (typeof Set !== 'undefined' && isNative(Set)) {
@@ -2010,6 +2083,7 @@ function initLifecycle (vm) {
 function lifecycleMixin (Vue) {
   Vue.prototype._update = function (vnode, hydrating) {
     var vm = this;
+    // 如果之前mount过，那么就要调用beforeUpdate的构子函数
     if (vm._isMounted) {
       callHook(vm, 'beforeUpdate');
     }
@@ -2018,8 +2092,11 @@ function lifecycleMixin (Vue) {
     var prevActiveInstance = activeInstance;
     activeInstance = vm;
     vm._vnode = vnode;
+    // Vue.prototype.__patch__ 被注射在入口点
+    // 基于使用的渲染后端。
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // 如果之前没有vnode, 说明是第一次渲染，否则是更新
     if (!prevVnode) {
       // initial render
       vm.$el = vm.__patch__(
@@ -3551,6 +3628,7 @@ function renderMixin (Vue) {
     var _parentVnode = ref._parentVnode;
 
     if (vm._isMounted) {
+      // 重新渲染复制slot节点
       // clone slot nodes on re-renders
       for (var key in vm.$slots) {
         vm.$slots[key] = cloneVNodes(vm.$slots[key]);
@@ -3562,6 +3640,7 @@ function renderMixin (Vue) {
     if (staticRenderFns && !vm._staticTrees) {
       vm._staticTrees = [];
     }
+    // 设置父vnode，允许render函数允许访问占位节点的data
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
     vm.$vnode = _parentVnode;
@@ -3571,6 +3650,7 @@ function renderMixin (Vue) {
       vnode = render.call(vm._renderProxy, vm.$createElement);
     } catch (e) {
       handleError(e, vm, "render function");
+      // 返回错误的渲染结果或者是之前的vnode，防止呈现错误导致空白组件
       // return error render result,
       // or previous vnode to prevent render error causing blank component
       /* istanbul ignore else */
@@ -3580,6 +3660,7 @@ function renderMixin (Vue) {
           : vm._vnode;
       }
     }
+    // 返回空的vnode，以防渲染函数错误退出
     // return empty vnode in case the render function errored out
     if (!(vnode instanceof VNode)) {
       if ("development" !== 'production' && Array.isArray(vnode)) {
@@ -3924,18 +4005,23 @@ function initComputed$1 (Comp) {
 
 /*  */
 
+// 初始化资产注册
 function initAssetRegisters (Vue) {
+  // 创建的资产注册的方法
   /**
    * Create asset registration methods.
    */
+  // 遍历资产类型列表生成对象的创建资产方法 
   config._assetTypes.forEach(function (type) {
     Vue[type] = function (
       id,
       definition
     ) {
+      // 如果不存在definition，那么就取出相应的资产
       if (!definition) {
         return this.options[type + 's'][id]
       } else {
+        // 如果定义一个component, 判断是否为html, 如果是报warn
         /* istanbul ignore if */
         {
           if (type === 'component' && config.isReservedTag(id)) {
@@ -3945,13 +4031,16 @@ function initAssetRegisters (Vue) {
             );
           }
         }
+        // 如果是component，就使用extend方法创建
         if (type === 'component' && isPlainObject(definition)) {
           definition.name = definition.name || id;
           definition = this.options._base.extend(definition);
         }
+        // 如果是directive，那么转换成相应的对象形式
         if (type === 'directive' && typeof definition === 'function') {
           definition = { bind: definition, update: definition };
         }
+        // 注册到对应的资产中
         this.options[type + 's'][id] = definition;
         return definition
       }
@@ -4773,10 +4862,12 @@ function createPatchFunction (backend) {
       } else if (isUndef(oldEndVnode)) {
         oldEndVnode = oldCh[--oldEndIdx];
       } else if (sameVnode(oldStartVnode, newStartVnode)) {
+        // push
         patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue);
         oldStartVnode = oldCh[++oldStartIdx];
         newStartVnode = newCh[++newStartIdx];
       } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        // unshift
         patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue);
         oldEndVnode = oldCh[--oldEndIdx];
         newEndVnode = newCh[--newEndIdx];
@@ -5919,13 +6010,17 @@ var domProps = {
 
 /*  */
 
+// 解析行内样式成一个对象
 var parseStyleText = cached(function (cssText) {
   var res = {};
+  // 分号分隔
   var listDelimiter = /;(?![^(]*\))/g;
+  // 冒号分隔
   var propertyDelimiter = /:(.+)/;
   cssText.split(listDelimiter).forEach(function (item) {
     if (item) {
       var tmp = item.split(propertyDelimiter);
+      // trim
       tmp.length > 1 && (res[tmp[0].trim()] = tmp[1].trim());
     }
   });
@@ -6610,6 +6705,7 @@ var platformModules = [
 
 /*  */
 
+// 在应用所有内置模块后，应最后应用指令模块。
 // the directive module should be applied last, after all
 // built-in modules have been applied.
 var modules = platformModules.concat(baseModules);
@@ -7147,6 +7243,7 @@ function applyTranslation (c) {
   }
 }
 
+// TransitionGroup 和 TransitionGroup 组件
 var platformComponents = {
   Transition: Transition,
   TransitionGroup: TransitionGroup
@@ -7154,16 +7251,19 @@ var platformComponents = {
 
 /*  */
 
+// 安装平台的特定的utils
 // install platform specific utils
 Vue$3.config.mustUseProp = mustUseProp;
 Vue$3.config.isReservedTag = isReservedTag;
 Vue$3.config.getTagNamespace = getTagNamespace;
 Vue$3.config.isUnknownElement = isUnknownElement;
 
+// 安装平台相关的组件和指令
 // install platform runtime directives & components
 extend(Vue$3.options.directives, platformDirectives);
 extend(Vue$3.options.components, platformComponents);
 
+// 安装平台的patch函数
 // install platform patch function
 Vue$3.prototype.__patch__ = inBrowser ? patch : noop;
 
@@ -9150,6 +9250,7 @@ var compileToFunctions = ref$1.compileToFunctions;
 
 /*  */
 
+// 用#id取元素的innerHTML
 var idToTemplate = cached(function (id) {
   var el = query(id);
   return el && el.innerHTML
@@ -9162,6 +9263,7 @@ Vue$3.prototype.$mount = function (
 ) {
   el = el && query(el);
 
+  // el 不再是body或者是html(Vue 1.x是支持的)
   /* istanbul ignore if */
   if (el === document.body || el === document.documentElement) {
     "development" !== 'production' && warn(
@@ -9171,11 +9273,13 @@ Vue$3.prototype.$mount = function (
   }
 
   var options = this.$options;
+  // 解析temlapte/el并转换成渲染函数
   // resolve template/el and convert to render function
   if (!options.render) {
     var template = options.template;
     if (template) {
       if (typeof template === 'string') {
+        // 如果是#开头，尝试用#id获取模板
         if (template.charAt(0) === '#') {
           template = idToTemplate(template);
           /* istanbul ignore if */
@@ -9187,6 +9291,7 @@ Vue$3.prototype.$mount = function (
           }
         }
       } else if (template.nodeType) {
+        // 如果template是一个节点
         template = template.innerHTML;
       } else {
         {
@@ -9195,6 +9300,7 @@ Vue$3.prototype.$mount = function (
         return this
       }
     } else if (el) {
+      // 如果template不存在，尝试用el的outerHTML作为template
       template = getOuterHTML(el);
     }
     if (template) {
@@ -9203,6 +9309,8 @@ Vue$3.prototype.$mount = function (
         mark('compile');
       }
 
+      
+      // 将template编译成渲染函数, 并提取静态渲染方法
       var ref = compileToFunctions(template, {
         shouldDecodeNewlines: shouldDecodeNewlines,
         delimiters: options.delimiters
@@ -9222,6 +9330,9 @@ Vue$3.prototype.$mount = function (
   return mount.call(this, el, hydrating)
 };
 
+// 获取元素的outerHTML
+// 顺便照顾一下IE中的SVG
+// 此方法用没有temlapte只el时, 取el的outerHTML当模板使用
 /**
  * Get outerHTML of elements, taking care
  * of SVG elements in IE as well.
