@@ -1248,12 +1248,15 @@ var defaultStrat = function (parentVal, childVal) {
     : childVal
 };
 
+// 验证组件名称
 /**
  * Validate component names
  */
 function checkComponents (options) {
   for (var key in options.components) {
+    // 转换成小写再比较
     var lower = key.toLowerCase();
+    // 不允许使用内置组件和标签名称
     if (isBuiltInTag(lower) || config.isReservedTag(lower)) {
       warn(
         'Do not use built-in or reserved HTML elements as component ' +
@@ -1263,6 +1266,7 @@ function checkComponents (options) {
   }
 }
 
+// 确保所有props选择的语法规范化为基于对象格式
 /**
  * Ensure all props option syntax are normalized into the
  * Object-based format.
@@ -1272,12 +1276,16 @@ function normalizeProps (options) {
   if (!props) { return }
   var res = {};
   var i, val, name;
+  // 如果是数组
   if (Array.isArray(props)) {
     i = props.length;
     while (i--) {
       val = props[i];
+      // 如果props为array, 那么每一个项应该是string, 否则warn
       if (typeof val === 'string') {
+        // 转成驼峰
         name = camelize(val);
+        // 转成key value形式 type为null
         res[name] = { type: null };
       } else {
         warn('props must be strings when using array syntax.');
@@ -1286,7 +1294,11 @@ function normalizeProps (options) {
   } else if (isPlainObject(props)) {
     for (var key in props) {
       val = props[key];
+      // 转成驼峰
       name = camelize(key);
+      // 如果是纯对象那么是标准语法
+      // 否则默认value对应的是type
+      // { prop1: String } --> { prop1: { type: String } }
       res[name] = isPlainObject(val)
         ? val
         : { type: val };
@@ -1295,6 +1307,7 @@ function normalizeProps (options) {
   options.props = res;
 }
 
+// 将原始函数指令规范成对象格式
 /**
  * Normalize raw function directives into object format.
  */
@@ -1303,13 +1316,17 @@ function normalizeDirectives (options) {
   if (dirs) {
     for (var key in dirs) {
       var def = dirs[key];
+      // 函数格式
       if (typeof def === 'function') {
+        // 转成对象格式
         dirs[key] = { bind: def, update: def };
       }
     }
   }
 }
 
+// 将两个选项对象合并一个对象，
+// 这个核心工具用于继承和实例化
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
@@ -1320,39 +1337,55 @@ function mergeOptions (
   vm
 ) {
   {
+    // 先检查组件名称
     checkComponents(child);
   }
+  // 规范化props选项
   normalizeProps(child);
+  // 规范化directives选项
   normalizeDirectives(child);
+  // 在继承中，extends优先于mixins
   var extendsFrom = child.extends;
   if (extendsFrom) {
+    // extends可能是Vue实例
     parent = typeof extendsFrom === 'function'
       ? mergeOptions(parent, extendsFrom.options, vm)
       : mergeOptions(parent, extendsFrom, vm);
   }
+  // 遍历mixins
   if (child.mixins) {
     for (var i = 0, l = child.mixins.length; i < l; i++) {
       var mixin = child.mixins[i];
+      // 如果mixin是Vue实例
       if (mixin.prototype instanceof Vue$3) {
         mixin = mixin.options;
       }
+      // 遍历合并
       parent = mergeOptions(parent, mixin, vm);
     }
   }
   var options = {};
   var key;
+  // 遍历父选项
   for (key in parent) {
     mergeField(key);
   }
+  // 遍历子选项
   for (key in child) {
+    // 如果child某key存在于parent
+    // 在遍历parent时已经合并
+    // 所以这里仅合并parent没有的key
     if (!hasOwn(parent, key)) {
       mergeField(key);
     }
   }
+  // 合并字段
   function mergeField (key) {
+    // 不同的选项使用不同的合并策略
     var strat = strats[key] || defaultStrat;
     options[key] = strat(parent[key], child[key], vm, key);
   }
+  // 返回合并后的选项
   return options
 }
 
