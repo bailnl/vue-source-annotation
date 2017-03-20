@@ -734,7 +734,11 @@ function popTarget () {
  * dynamically accessing methods on Array prototype
  */
 
+// 保存Array的prototype
 var arrayProto = Array.prototype;
+// 继承Array prototype 
+// 变异方法用于监测Array的变化通知依赖
+// 这些方法都是有副作用的，会影响原数组，所以劫持并通知更新
 var arrayMethods = Object.create(arrayProto);[
   'push',
   'pop',
@@ -745,11 +749,15 @@ var arrayMethods = Object.create(arrayProto);[
   'reverse'
 ]
 .forEach(function (method) {
+  // 缓存旧方法
   // cache original method
   var original = arrayProto[method];
+  // 遍历定义相应的变异方法
   def(arrayMethods, method, function mutator () {
+    // 保存原始参数
     var arguments$1 = arguments;
 
+    // 拷贝参数
     // avoid leaking arguments:
     // http://jsperf.com/closure-with-arguments
     var i = arguments.length;
@@ -757,8 +765,10 @@ var arrayMethods = Object.create(arrayProto);[
     while (i--) {
       args[i] = arguments$1[i];
     }
+    // 执行原数组相应的方法
     var result = original.apply(this, args);
     var ob = this.__ob__;
+    // 收集新增项
     var inserted;
     switch (method) {
       case 'push':
@@ -771,7 +781,9 @@ var arrayMethods = Object.create(arrayProto);[
         inserted = args.slice(2);
         break
     }
+    // 如果新增项存在，则观察
     if (inserted) { ob.observeArray(inserted); }
+    // 最后变更通知 并返回原方法处理结果
     // notify change
     ob.dep.notify();
     return result
@@ -780,6 +792,7 @@ var arrayMethods = Object.create(arrayProto);[
 
 /*  */
 
+// 获取方法名称
 var arrayKeys = Object.getOwnPropertyNames(arrayMethods);
 
 /**
@@ -881,6 +894,7 @@ function observe (value, asRootData) {
   ) {
     ob = new Observer(value);
   }
+  // 如果作为root data, 那么vmCount++
   if (asRootData && ob) {
     ob.vmCount++;
   }
@@ -898,26 +912,40 @@ function defineReactive$$1 (
 ) {
   var dep = new Dep();
 
+  // 获取属性描述
   var property = Object.getOwnPropertyDescriptor(obj, key);
+  // 如果属性不可以配置跳出
   if (property && property.configurable === false) {
     return
   }
 
+  // 满足预定义的getter / setter
   // cater for pre-defined getter/setters
   var getter = property && property.get;
   var setter = property && property.set;
 
+  
+  // 如果val是一个对象，也观察
   var childOb = observe(val);
+  // 定义属性的getter 和 setter
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
+    // 当依赖取值的时候会被收集依赖，当setter时候会通知
+    // 子对象变更也算是变更，所以要收集子节点依赖
     get: function reactiveGetter () {
+      // 如果预定义getter，则使用预定义getter，否则使用 val
       var value = getter ? getter.call(obj) : val;
+      // 依赖收集的目标存在
       if (Dep.target) {
+        // 收集依赖
         dep.depend();
+        // 如果childOb存在，说明val是一个对象并已经转换成响应式
         if (childOb) {
+          // 子对象也收集依赖
           childOb.dep.depend();
         }
+        // 如果是数组递归收集依赖
         if (Array.isArray(value)) {
           dependArray(value);
         }
@@ -945,21 +973,29 @@ function defineReactive$$1 (
   });
 }
 
+// 在对象上增加一个属性，如果属性不存在，则添加新属性并触发通知
 /**
  * Set a property on an object. Adds the new property and
  * triggers change notification if the property doesn't
  * already exist.
  */
 function set (target, key, val) {
+  // 如果是一个数组，用splice删除并添加，变异方法会触发通知
   if (Array.isArray(target)) {
+    // 更新length
     target.length = Math.max(target.length, key);
+    // 用splice删除并添加
     target.splice(key, 1, val);
+    // 返回
     return val
   }
+  // 如果target有key这个属性, 设置会触发setter, setter会触发通知
   if (hasOwn(target, key)) {
+    // 设置
     target[key] = val;
     return val
   }
+  // 避免运行时为vue实例和根$data设置属性，应该在data option中预先声明
   var ob = target.__ob__;
   if (target._isVue || (ob && ob.vmCount)) {
     "development" !== 'production' && warn(
@@ -968,23 +1004,30 @@ function set (target, key, val) {
     );
     return val
   }
+  // 如果不是响应式，设置并直接返回
   if (!ob) {
     target[key] = val;
     return val
   }
+  // 否则定义成响应式属性
   defineReactive$$1(ob.value, key, val);
+  // 通知依赖
   ob.dep.notify();
   return val
 }
 
+// 删除一个属性，如有必要触发更新
 /**
  * Delete a property and trigger change if necessary.
  */
 function del (target, key) {
+  // 如果target是一个数组，删除并返回
+  // splice是一个变异方法会触发更新
   if (Array.isArray(target)) {
     target.splice(key, 1);
     return
   }
+  // 避免删除Vue实例属性或者是$data根属性，只需要将其设置为null
   var ob = target.__ob__;
   if (target._isVue || (ob && ob.vmCount)) {
     "development" !== 'production' && warn(
@@ -993,13 +1036,17 @@ function del (target, key) {
     );
     return
   }
+  // 如果没有这个key属性那么就直接返回
   if (!hasOwn(target, key)) {
     return
   }
+  // 删除属性
   delete target[key];
+  // 如果不是响应式，直接返回
   if (!ob) {
     return
   }
+  // 依赖通知
   ob.dep.notify();
 }
 
