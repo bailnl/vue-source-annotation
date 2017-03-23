@@ -1424,6 +1424,7 @@ function resolveAsset (
 
 /*  */
 
+// 验证属性
 function validateProp (
   key,
   propOptions,
@@ -1457,15 +1458,18 @@ function validateProp (
   return value
 }
 
+// 获取属性的默认值
 /**
  * Get the default value of a prop.
  */
 function getPropDefaultValue (vm, prop, key) {
+  // 没有默认值，返回undefined
   // no default, return undefined
   if (!hasOwn(prop, 'default')) {
     return undefined
   }
   var def = prop.default;
+  // 如果默认值为对象，报warn, 应该是使用工厂函数
   // warn against non-factory defaults for Object & Array
   if ("development" !== 'production' && isObject(def)) {
     warn(
@@ -1475,6 +1479,7 @@ function getPropDefaultValue (vm, prop, key) {
       vm
     );
   }
+  // 之前的渲染prop的原始值也是undeined，返回之前的默认值，以避免不必要的触发观察者
   // the raw prop value was also undefined from previous render,
   // return previous default value to avoid unnecessary watcher trigger
   if (vm && vm.$options.propsData &&
@@ -1482,6 +1487,8 @@ function getPropDefaultValue (vm, prop, key) {
     vm._props[key] !== undefined) {
     return vm._props[key]
   }
+  // 当prop是非Function类型时，调用工厂函数
+  // 如果一个值是Function，如果他的它原型也是Function, 可能会跨越不同的执行上下文
   // call factory function for non-Function types
   // a value is Function if its prototype is function even across different execution context
   return typeof def === 'function' && getType(prop.type) !== 'Function'
@@ -1489,6 +1496,7 @@ function getPropDefaultValue (vm, prop, key) {
     : def
 }
 
+// 断言一个prop是否有效
 /**
  * Assert whether a prop is valid.
  */
@@ -1499,6 +1507,7 @@ function assertProp (
   vm,
   absent
 ) {
+  // prop不存在，报warn
   if (prop.required && absent) {
     warn(
       'Missing required prop: "' + name + '"',
@@ -1506,6 +1515,7 @@ function assertProp (
     );
     return
   }
+  // 如果value为空或者不是必需的则跳出不再断言
   if (value == null && !prop.required) {
     return
   }
@@ -1513,6 +1523,7 @@ function assertProp (
   var valid = !type || type === true;
   var expectedTypes = [];
   if (type) {
+    // 转换成数组
     if (!Array.isArray(type)) {
       type = [type];
     }
