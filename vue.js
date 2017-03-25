@@ -1553,6 +1553,7 @@ function assertProp (
   }
 }
 
+// 断点一个值的类型
 /**
  * Assert the type of a value
  */
@@ -1568,10 +1569,12 @@ function assertType (value, type) {
   } else if (expectedType === 'Function') {
     valid = typeof value === (expectedType = 'function');
   } else if (expectedType === 'Object') {
+    // 如果Type是Object类型那么认为是纯对象
     valid = isPlainObject(value);
   } else if (expectedType === 'Array') {
     valid = Array.isArray(value);
   } else {
+    // 自定义 或者 类似Date这样的内置类型
     valid = value instanceof type;
   }
   return {
@@ -1580,12 +1583,14 @@ function assertType (value, type) {
   }
 }
 
+// 使用函数的名称来检查内置类型，因为在不同的vms或者是iframe运行是有差异的，简单的等式检查将失败。
 /**
  * Use function string name to check built-in types,
  * because a simple equality check will fail when running
  * across different vms / iframes.
  */
 function getType (fn) {
+  // 匹配函数名
   var match = fn && fn.toString().match(/^\s*function (\w+)/);
   return match && match[1]
 }
@@ -1603,10 +1608,13 @@ function isType (type, fn) {
   return false
 }
 
+// 错误处理
 function handleError (err, vm, info) {
+  // 如果配置了errorHandler则调用
   if (config.errorHandler) {
     config.errorHandler.call(null, err, vm, info);
   } else {
+    // 否则默认
     {
       warn(("Error in " + info + ":"), vm);
     }
@@ -1621,9 +1629,11 @@ function handleError (err, vm, info) {
 
 /* not type checking this file because flow doesn't play well with Proxy */
 
+// 初始化代理
 var initProxy;
 
 {
+  // 全局允许
   var allowedGlobals = makeMap(
     'Infinity,undefined,NaN,isFinite,isNaN,' +
     'parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,' +
@@ -1640,18 +1650,22 @@ var initProxy;
     );
   };
 
+  // 检查proxy是否支持
   var hasProxy =
     typeof Proxy !== 'undefined' &&
     Proxy.toString().match(/native code/);
 
   if (hasProxy) {
+    // 内置修饰器
     var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta');
     config.keyCodes = new Proxy(config.keyCodes, {
       set: function set (target, key, value) {
+        // 如果设置的已经是内置的则报warn
         if (isBuiltInModifier(key)) {
           warn(("Avoid overwriting built-in modifier in config.keyCodes: ." + key));
           return false
         } else {
+          // 否则设置
           target[key] = value;
           return true
         }
@@ -2011,12 +2025,16 @@ function eventsMixin (Vue) {
     var this$1 = this;
 
     var vm = this;
+    // 支持多事件
     if (Array.isArray(event)) {
       for (var i = 0, l = event.length; i < l; i++) {
         this$1.$on(event[i], fn);
       }
     } else {
+      // 存去事件回调列表
       (vm._events[event] || (vm._events[event] = [])).push(fn);
+      // 使用flag的形式注册来优化构子事件成本
+      // 而不是通过hash查找
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
       if (hookRE.test(event)) {
@@ -2028,6 +2046,7 @@ function eventsMixin (Vue) {
 
   Vue.prototype.$once = function (event, fn) {
     var vm = this;
+    // 包裹一层，为了调用事件处理函数前先移除掉事件来实现once
     function on () {
       vm.$off(event, on);
       fn.apply(vm, arguments);
@@ -2041,6 +2060,7 @@ function eventsMixin (Vue) {
     var this$1 = this;
 
     var vm = this;
+    // 如果没有指定参数移除所有事件
     // all
     if (!arguments.length) {
       vm._events = Object.create(null);
@@ -2055,9 +2075,11 @@ function eventsMixin (Vue) {
     }
     // specific event
     var cbs = vm._events[event];
+    // 如果没有事件处理器直接返回
     if (!cbs) {
       return vm
     }
+    // 如果只有事件名，清空同类型所有事件
     if (arguments.length === 1) {
       vm._events[event] = null;
       return vm
@@ -2065,6 +2087,7 @@ function eventsMixin (Vue) {
     // specific handler
     var cb;
     var i = cbs.length;
+    // 如果指定了删除了的事件处理器，则一个一个对比删除
     while (i--) {
       cb = cbs[i];
       if (cb === fn || cb.fn === fn) {
@@ -2077,9 +2100,12 @@ function eventsMixin (Vue) {
 
   Vue.prototype.$emit = function (event) {
     var vm = this;
+    // 取事件处理器列表
     var cbs = vm._events[event];
     if (cbs) {
       cbs = cbs.length > 1 ? toArray(cbs) : cbs;
+      // 取参数用于传入事件处理器 
+      // 例如: vm.$emit('test', ...args)
       var args = toArray(arguments, 1);
       for (var i = 0, l = cbs.length; i < l; i++) {
         cbs[i].apply(vm, args);
@@ -2423,7 +2449,9 @@ function deactivateChildComponent (vm, direct) {
 }
 
 function callHook (vm, hook) {
+  // 取对应的构子列表
   var handlers = vm.$options[hook];
+  // 循环执行
   if (handlers) {
     for (var i = 0, j = handlers.length; i < j; i++) {
       try {
@@ -2433,6 +2461,10 @@ function callHook (vm, hook) {
       }
     }
   }
+  // 在注册事件的时候，如果是一个构子事件，
+  // 例如: vm.$on('hook:updated', ...args)
+  // 则vm._hasHookEvent会标记会true
+  // 当构子事件存在则触发
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook);
   }
